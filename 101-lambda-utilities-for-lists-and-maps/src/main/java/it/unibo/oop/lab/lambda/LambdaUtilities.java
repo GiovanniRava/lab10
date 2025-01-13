@@ -1,13 +1,14 @@
 package it.unibo.oop.lab.lambda;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -15,12 +16,16 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.list;
+
 /**
  * This class will contain four utility functions on lists and maps, of which the first one is provided as example.
- * 
+ * <br>
  * All such methods take as second argument a functional interface from the Java library (java.util.function).
  * This enables calling them by using the concise lambda syntax, as it's done in the main function.
- *
+ * <br>
  * Realize the three methods **WITHOUT** using the Stream library, but only leveraging the lambdas.
  *
  */
@@ -51,6 +56,7 @@ public final class LambdaUtilities {
     /**
      * @param list
      *            input list
+
      * @param pre
      *            predicate to execute
      * @param <T>
@@ -60,13 +66,9 @@ public final class LambdaUtilities {
      *         otherwise.
      */
     public static <T> List<Optional<T>> optFilter(final List<T> list, final Predicate<T> pre) {
-        /*
-         * Suggestion: consider Optional.filter
-         */
-        final List <Optional<T>> l = new ArrayList<>(list.size()*2);
-        list.forEach(t -> l.add(Optional.ofNullable(t).filter(pre)));        
-        
-        return l;
+        final List<Optional<T>> pollo= new ArrayList<>();
+        list.forEach(t->pollo.add(Optional.ofNullable(t).filter(pre)));
+        return pollo;
     }
 
     /**
@@ -82,19 +84,15 @@ public final class LambdaUtilities {
      *         based on the mapping done by the function
      */
     public static <R, T> Map<R, Set<T>> group(final List<T> list, final Function<T, R> op) {
-        /*
-         * Suggestion: consider Map.merge
-         */
-        final Map <R, Set<T>> map= new HashMap<>();
-        list.forEach(t->{
-            map.merge(op.apply(t), new HashSet<>(Arrays.asList(t)), (t1, t2)->{
-                t1.addAll(t2);
-                return t1;
-            });
-        });
+        final Map<R, Set<T>> map = new HashMap<>();
+        final BiFunction<Set<T>, Set<T>, Set<T>> union = (s1,s2)-> {
+            final var result = new LinkedHashSet<>(s1);
+            result.addAll(s2);
+            return result;
+        };
+        list.forEach(t->map.merge(op.apply(t), Set.of(t), union));
         return map;
     }
-
 
     /**
      * @param map
@@ -105,7 +103,7 @@ public final class LambdaUtilities {
      *            element type
      * @param <K>
      *            key type
-     * @return a map whose non present values are filled with the value provided
+     * @return a map whose non-present values are filled with the value provided
      *         by the supplier
      */
     public static <K, V> Map<K, V> fill(final Map<K, Optional<V>> map, final Supplier<V> def) {
@@ -114,7 +112,9 @@ public final class LambdaUtilities {
          *
          * Keep in mind that a map can be iterated through its forEach method
          */
-        return null;
+        final Map<K, V> m = new HashMap<>();
+        map.forEach((k,v)-> m.put(k, v.orElse(def.get())));
+        return m;
     }
 
     /**
@@ -123,7 +123,7 @@ public final class LambdaUtilities {
      */
     @SuppressWarnings("PMD.SystemPrintln")
     public static void main(final String[] args) {
-        final List<Integer> li = IntStream.range(1, 8).mapToObj(i -> Integer.valueOf(i)).collect(Collectors.toList());
+        final List<Integer> li = IntStream.range(1, 8).boxed().collect(Collectors.toList());
         System.out.println(dup(li, x -> x + 100));
         /*
          * [1, 101, 2, 102, 3, 103, 4, 104, 5, 105, 6, 106, 7, 107]
